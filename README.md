@@ -2,6 +2,17 @@
 
 A smart, browser-based sound masking application that automatically adapts to your environment. Perfect for sleep, focus, and privacy.
 
+<h3>🌙 Main Interface in Custom Dark Mode</h3>
+<a href="screenshots/main-interface-(custom-dark-mode).png" target="_blank">
+  <img src="screenshots/main-interface-(custom-dark-mode).png" width="600" alt="Main Interface - Dark Mode"/>
+</a>
+
+<h3>☀️ Settings Panel in Custom Day Mode</h3>
+<a href="screenshots/settings-panel-open-(custom-day-mode).png" target="_blank">
+  <img src="screenshots/settings-panel-open-(custom-day-mode).png" width="600" alt="Settings Panel - Day Mode"/>
+</a>
+
+
 ## ✨ Features
 
 ### 🎵 Multiple Sound Themes
