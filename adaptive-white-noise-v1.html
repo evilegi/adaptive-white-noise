@@ -1,0 +1,2653 @@
+<!DOCTYPE html>
+<!--
+═══════════════════════════════════════════════════════════════════════
+  Adaptive White Noise Application
+  
+  Copyright (C) 2025 Sarah Bass [Pseudonym: Evilegi]
+  
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as 
+  published by the Free Software Foundation, either version 1 of the
+  License, or (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU Affero General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program. If not, see https://www.gnu.org/licenses/
+  
+  ═══════════════════════════════════════════════════════════════════════
+  
+  NETWORK USE NOTICE (AGPL Requirement):
+  
+  If you modify this program and let users interact with it remotely
+  through a computer network, you MUST provide them with a way to
+  download the complete source code of your modified version.
+  
+  This can be as simple as:
+  - A "View Source" or "Download Source" link in your app
+  - A link to your GitHub repository with the modified code
+  - Offering the source code upon request
+  
+  This ensures the software remains free for everyone.
+  
+  ═══════════════════════════════════════════════════════════════════════
+  
+  Source Code: https://github.com/YOUR_USERNAME/adaptive-white-noise
+  
+  Key Features & Innovations:
+  • Real-time adaptive noise detection with multiple intensity levels
+  • Natural sound recordings (rain, ocean, stream) with quality selection
+  • Synthesized adaptive noise that switches colors based on ambient noise
+  • Customizable thresholds and transition speeds
+  • Flexible sleep timer with favorites
+  • Custom day/night theme backgrounds
+  • Single-file architecture for maximum portability
+  
+  ═══════════════════════════════════════════════════════════════════════
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adaptive White Noise</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 20px;
+            transition: background 0.3s ease;
+            position: relative;
+        }
+
+        /* Custom background overlay for user images */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: var(--day-bg, none);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: -1;
+        }
+
+        body.has-light-bg::before {
+            opacity: 1;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: var(--night-bg, none);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: -1;
+        }
+
+        body.dark-theme::before {
+            opacity: 0;
+        }
+
+        body.dark-theme.has-dark-bg::after {
+            opacity: 1;
+        }
+
+        body.dark-theme {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
+        .bg-customization-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .bg-preview-container {
+            flex: 1;
+            text-align: center;
+        }
+
+        .bg-preview-label {
+            font-size: 0.85em;
+            opacity: 0.8;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .bg-thumbnail {
+            width: 100%;
+            height: 100px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .bg-thumbnail:hover {
+            border-color: rgba(102, 126, 234, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .bg-thumbnail-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .bg-thumbnail-preview.active {
+            display: block;
+        }
+
+        .bg-thumbnail-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            opacity: 0.5;
+        }
+
+        .bg-edit-icon {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1em;
+            transition: all 0.2s;
+        }
+
+        .bg-thumbnail:hover .bg-edit-icon {
+            background: rgba(102, 126, 234, 0.9);
+            transform: scale(1.1);
+        }
+
+        .bg-clear-btn {
+            margin-top: 5px;
+            padding: 4px 8px;
+            background: rgba(245, 87, 108, 0.3);
+            border: 1px solid rgba(245, 87, 108, 0.5);
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.75em;
+            transition: all 0.2s;
+            display: none;
+        }
+
+        .bg-clear-btn.active {
+            display: inline-block;
+        }
+
+        .bg-clear-btn:hover {
+            background: rgba(245, 87, 108, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .bg-file-input {
+            display: none;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            opacity: 0.8;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .main-button {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .main-button.start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .main-button.stop {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .main-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .status-value {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        #noiseType {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.95em;
+        }
+
+        #noiseType.white {
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            color: #3730a3;
+        }
+
+        #noiseType.green {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+        }
+
+        #noiseType.pink {
+            background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+            color: #9f1239;
+        }
+
+        #noiseType.brown {
+            background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+            color: #92400e;
+        }
+
+        .noise-meter {
+            height: 10px;
+            background: linear-gradient(to right, 
+                #a7f3d0 0%, #a7f3d0 15%,      /* White/Green zone */
+                #fdba74 15%, #fdba74 60%,     /* Brown zone */
+                #fbcfe8 60%, #fbcfe8 100%);   /* Pink zone */
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+            position: relative;
+        }
+
+        .noise-level {
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            transition: width 0.3s;
+            border-radius: 5px;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        }
+
+        .settings-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .setting-row {
+            margin-bottom: 15px;
+        }
+
+        .setting-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .setting-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.3);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            border: none;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 1em;
+            cursor: pointer;
+            outline: none;
+        }
+
+        select option {
+            background: #1e3c72;
+            color: white;
+        }
+
+        body.dark-theme select option {
+            background: #0f172a;
+        }
+
+        .sound-library-toggle {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .sound-library-toggle:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .sound-library-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            margin-top: 0;
+        }
+
+        .sound-library-panel.open {
+            max-height: 600px;
+            margin-top: 15px;
+        }
+
+        .sound-color-section {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: 120px 1fr auto;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .sound-color-label {
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .sound-variant-select {
+            padding: 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        .preview-btn {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .preview-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .preview-btn.playing {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .log-panel {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            opacity: 0.8;
+        }
+
+        .log-entry.highlight {
+            color: #fbbf24;
+            font-weight: bold;
+            opacity: 1;
+        }
+
+        .info-text {
+            text-align: center;
+            opacity: 0.7;
+            font-size: 0.85em;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+
+        @keyframes flash {
+            0%, 100% { background-color: rgba(255, 255, 255, 0.1); }
+            50% { background-color: rgba(102, 126, 234, 0.4); }
+        }
+
+        .settings-panel.flash {
+            animation: flash 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle" title="Toggle dark/light theme">🌙</button>
+    <div class="container">
+        <h1>🌊 Adaptive White Noise</h1>
+        <p class="subtitle">Set it and sleep - automatically adjusts to mask noise</p>
+
+        <button class="main-button start" id="toggleBtn">Start Adaptive Mode</button>
+
+        <div class="status-panel">
+            <div class="status-row">
+                <span class="status-label">Status:</span>
+                <span class="status-value" id="status">Idle</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Ambient Noise:</span>
+                <span class="status-value" id="ambientLevel">0</span>
+                <span style="font-size: 0.8em; opacity: 0.7; margin-left: 8px;">(Raw: <span id="rawLevel">0</span>)</span>
+            </div>
+            <div class="noise-meter">
+                <div class="noise-level" id="noiseMeter" style="width: 0%"></div>
+            </div>
+            <div style="font-size: 0.75em; opacity: 0.6; margin-top: 3px; display: flex; justify-content: space-between;">
+                <span>0</span>
+                <span style="color: #a7f3d0;">15</span>
+                <span style="color: #fdba74;">Brown</span>
+                <span style="color: #fbcfe8;">60</span>
+                <span>100+</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Output Volume:</span>
+                <span class="status-value" id="outputVolume">20%</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Noise Type:</span>
+                <span class="status-value white" id="noiseType">White</span>
+            </div>
+        </div>
+
+        <div class="settings-panel">
+            <div class="setting-row">
+                <label class="setting-label">Baseline Volume: <span id="baselineValue">20%</span></label>
+                <input type="range" id="baselineVolume" min="5" max="60" value="20">
+            </div>
+            
+            <div class="setting-row" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                <label class="setting-label">🎵 Sound Theme</label>
+                <select id="soundThemeSelect" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); font-size: 1em; cursor: pointer; margin-bottom: 10px;">
+                    <option value="adaptive-noise">🌈 Adaptive Noise (White/Green/Brown/Pink)</option>
+                    <option value="rain">🌧️ Rain - Natural rain recordings</option>
+                    <option value="ocean">🌊 Ocean - Natural wave recordings</option>
+                    <option value="stream">💧 Stream - Natural water recordings</option>
+                </select>
+                
+                <button id="previewThemeBtn" style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; transition: all 0.2s;">
+                    ▶️ Preview Theme (plays all 3 intensities)
+                </button>
+                
+                <div id="themeInfo" style="font-size: 0.85em; opacity: 0.8; margin-top: 10px; text-align: center; line-height: 1.6;">
+                    <strong>Adaptive Noise:</strong> Synthesized noise that switches colors (White/Green/Brown/Pink) based on ambient noise type
+                </div>
+            </div>
+
+            <div class="setting-row" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                <label class="setting-label">⏰ Sleep Timer</label>
+                <div id="timerFavorites" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                    <!-- Timer favorite buttons will be added here -->
+                </div>
+                <div id="timerStatus" style="font-size: 0.85em; opacity: 0.8; margin-top: 10px; text-align: center; display: none;">
+                    ⏰ Auto-stop in: <span id="timerRemaining">--:--</span>
+                </div>
+            </div>
+
+            <!-- Advanced Settings Toggle Button -->
+            <button id="advancedSettingsToggle" style="width: 100%; padding: 15px; margin-top: 20px; background: rgba(255, 255, 255, 0.15); color: white; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 10px; font-size: 1em; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <span>⚙️ Advanced Settings</span>
+                <span id="advancedSettingsArrow" style="transition: transform 0.3s;">▼</span>
+            </button>
+
+            <!-- Advanced Settings Panel (Hidden by default) -->
+            <div id="advancedSettingsPanel" style="max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out;">
+                <div style="padding-top: 15px;">
+                    <div class="setting-row">
+                        <label class="setting-label">Sensitivity: <span id="sensitivityValue">Medium</span></label>
+                        <input type="range" id="sensitivity" min="1" max="3" value="2">
+                        <div style="font-size: 0.8em; opacity: 0.7; margin-top: 5px; line-height: 1.4;">
+                            Controls minimum ambient noise level to start reacting<br>
+                            Low: Reacts at 50+ | Medium: Reacts at 35+ | High: Reacts at 25+<br>
+                            <em style="opacity: 0.8;">Higher = more sensitive to quieter sounds</em>
+                        </div>
+                    </div>
+
+                    <div class="setting-row" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <label class="setting-label">🎚️ Intensity Thresholds</label>
+                        <div style="font-size: 0.85em; opacity: 0.7; margin-bottom: 12px; line-height: 1.5;">
+                            Adjust when sounds switch between Light → Medium → Heavy
+                        </div>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label class="setting-label" style="font-size: 0.9em;">Light → Medium at: <span id="threshold1Value">15</span></label>
+                            <input type="range" id="threshold1" min="5" max="50" step="1" value="15" style="width: 100%;">
+                            <div style="font-size: 0.75em; opacity: 0.6; margin-top: 3px;">When to switch from quiet sounds to voice-masking</div>
+                        </div>
+                        
+                        <div style="margin-bottom: 5px;">
+                            <label class="setting-label" style="font-size: 0.9em;">Medium → Heavy at: <span id="threshold2Value">60</span></label>
+                            <input type="range" id="threshold2" min="30" max="100" step="5" value="60" style="width: 100%;">
+                            <div style="font-size: 0.75em; opacity: 0.6; margin-top: 3px;">When to switch to maximum intensity sounds</div>
+                        </div>
+                    </div>
+
+                    <div class="setting-row" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <label class="setting-label">➕ Add Custom Timer</label>
+                        <div style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; padding: 15px; margin-top: 10px;">
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 0.75em; color: #a7f3d0; margin-bottom: 5px;">hours</div>
+                                    <input type="number" id="timerHours" min="0" max="24" value="0" style="width: 60px; padding: 10px; font-size: 1.2em; text-align: center; background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px;">
+                                </div>
+                                <div style="font-size: 1.5em; opacity: 0.5; padding-top: 20px;">:</div>
+                                <div style="text-align: center;">
+                                    <div style="font-size: 0.75em; color: #a7f3d0; margin-bottom: 5px;">minutes</div>
+                                    <input type="number" id="timerMinutes" min="0" max="59" value="0" style="width: 60px; padding: 10px; font-size: 1.2em; text-align: center; background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px;">
+                                </div>
+                                <button id="addTimerFavorite" style="margin-top: 20px; padding: 10px 20px; background: rgba(102, 126, 234, 0.4); color: white; border: 1px solid rgba(102, 126, 234, 0.8); border-radius: 8px; font-size: 0.9em; cursor: pointer; transition: all 0.2s;">
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-row" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <label class="setting-label">⚡ Transition Speed Controls</label>
+                        <div style="font-size: 0.85em; opacity: 0.7; margin-bottom: 12px; line-height: 1.5;">
+                            Control how quickly sounds adjust to noise changes
+                        </div>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label class="setting-label" style="font-size: 0.9em;">Fade Up Speed: <span id="fadeUpValue">1.0s</span></label>
+                            <input type="range" id="fadeUpSpeed" min="0.1" max="3.0" step="0.1" value="1.0" style="width: 100%;">
+                            <div style="font-size: 0.75em; opacity: 0.6; margin-top: 3px;">How fast sound increases when noise detected</div>
+                        </div>
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label class="setting-label" style="font-size: 0.9em;">Hold Duration: <span id="holdDurationValue">2.0s</span></label>
+                            <input type="range" id="holdDuration" min="0.5" max="10.0" step="0.5" value="2.0" style="width: 100%;">
+                            <div style="font-size: 0.75em; opacity: 0.6; margin-top: 3px;">How long to stay at higher level before dropping</div>
+                        </div>
+                        
+                        <div style="margin-bottom: 5px;">
+                            <label class="setting-label" style="font-size: 0.9em;">Fade Down Speed: <span id="fadeDownValue">3.0s</span></label>
+                            <input type="range" id="fadeDownSpeed" min="0.5" max="10.0" step="0.5" value="3.0" style="width: 100%;">
+                            <div style="font-size: 0.75em; opacity: 0.6; margin-top: 3px;">How fast sound decreases when noise stops</div>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-row" id="adaptiveNoiseSettings" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <label class="setting-label">Low Noise Type (for quiet environments)</label>
+                        <select id="lowNoiseType" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); font-size: 1em; cursor: pointer;">
+                            <option value="green">💚 Green Noise (softer, nature-like)</option>
+                            <option value="white">🤍 White Noise (classic)</option>
+                        </select>
+                        <div style="font-size: 0.85em; opacity: 0.7; margin-top: 8px; text-align: center;">
+                            Used when ambient noise is below threshold
+                        </div>
+                    </div>
+                    
+                    <div class="setting-row" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <label class="setting-label" style="font-size: 0.85em; opacity: 0.8;">
+                            🌊 <strong>How Adaptive System Works:</strong><br>
+                            <span style="font-size: 0.9em; font-weight: normal; line-height: 1.6;">
+                            • <strong>Listens</strong> to ambient noise through your microphone<br>
+                            • <strong>Adjusts</strong> volume and intensity automatically<br>
+                            • <strong>Light</strong> (&lt;threshold1) → <strong>Medium</strong> (threshold1-threshold2) → <strong>Heavy</strong> (threshold2+)<br>
+                            <em style="opacity: 0.7;">Perfect for masking unwanted noise while you sleep!</em>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="setting-row" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <label class="setting-label">🖼️ Background Images</label>
+                        <div style="font-size: 0.85em; opacity: 0.7; margin-bottom: 12px; line-height: 1.5;">
+                            Customize backgrounds with your own images (pictures of loved ones, nature, etc.)
+                        </div>
+                        
+                        <div class="bg-customization-row">
+                            <!-- Day Mode Background -->
+                            <div class="bg-preview-container">
+                                <span class="bg-preview-label">☀️ Day Mode</span>
+                                <div class="bg-thumbnail" id="dayBgThumbnail">
+                                    <img class="bg-thumbnail-preview" id="dayBgPreview" alt="Day background">
+                                    <div class="bg-thumbnail-placeholder" id="dayBgPlaceholder">🌅</div>
+                                    <div class="bg-edit-icon">✏️</div>
+                                </div>
+                                <button class="bg-clear-btn" id="clearDayBg">Clear</button>
+                                <input type="file" class="bg-file-input" id="dayBgInput" accept="image/*">
+                            </div>
+
+                            <!-- Night Mode Background -->
+                            <div class="bg-preview-container">
+                                <span class="bg-preview-label">🌙 Night Mode</span>
+                                <div class="bg-thumbnail" id="nightBgThumbnail">
+                                    <img class="bg-thumbnail-preview" id="nightBgPreview" alt="Night background">
+                                    <div class="bg-thumbnail-placeholder" id="nightBgPlaceholder">🌌</div>
+                                    <div class="bg-edit-icon">✏️</div>
+                                </div>
+                                <button class="bg-clear-btn" id="clearNightBg">Clear</button>
+                                <input type="file" class="bg-file-input" id="nightBgInput" accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="log-panel" id="logPanel">
+            <div class="log-entry">System ready. Click Start to begin monitoring.</div>
+        </div>
+    </div>
+
+    <script>
+        // Audio context and nodes
+        let audioContext = null;
+        let noiseNode = null;
+        let gainNode = null;
+        let filterNode = null;
+        let analyser = null;
+        let microphone = null;
+        let isRunning = false;
+        let animationFrame = null;
+
+        // Load preferences from localStorage
+        function loadPreferences() {
+            const saved = localStorage.getItem('adaptiveWhiteNoisePrefs');
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    return {};
+                }
+            }
+            return {};
+        }
+
+        // Save preferences to localStorage
+        function savePreferences() {
+            const prefs = {
+                baselineVolume: config.baselineVolume,
+                sensitivity: config.sensitivity,
+                lowNoiseType: config.lowNoiseType,
+                soundTheme: config.soundTheme,
+                sleepTimerMinutes: config.sleepTimerMinutes,
+                timerFavorites: config.timerFavorites,
+                fadeUpSpeed: config.fadeUpSpeed,
+                holdDuration: config.holdDuration,
+                fadeDownSpeed: config.fadeDownSpeed,
+                threshold1: config.threshold1,
+                threshold2: config.threshold2,
+                theme: document.body.classList.contains('dark-theme') ? 'dark' : 'light',
+                soundLibrary: config.soundLibrary,
+                dayModeBackground: config.dayModeBackground,
+                nightModeBackground: config.nightModeBackground
+            };
+            localStorage.setItem('adaptiveWhiteNoisePrefs', JSON.stringify(prefs));
+        }
+
+        // Load saved preferences
+        const savedPrefs = loadPreferences();
+
+        // Configuration
+        let config = {
+            baselineVolume: savedPrefs.baselineVolume || 0.2,
+            currentVolume: savedPrefs.baselineVolume || 0.2,
+            targetVolume: savedPrefs.baselineVolume || 0.2,
+            sensitivity: savedPrefs.sensitivity || 2, // 1=low, 2=medium, 3=high
+            noiseColor: 'green', // Current playing color: white, green, pink, brown
+            lowNoiseType: savedPrefs.lowNoiseType || 'green', // User's choice for low noise: white or green (DEFAULT: green)
+            lastColorSwitch: 0, // Timestamp of last color change
+            minVolume: 0.05,
+            maxVolume: 0.9,
+            volumeIncrement: 0.05,
+            volumeDecrement: 0.04,
+            smoothing: 0.1, // OPTIMIZED: Minimal smoothing for instant voice/noise detection (was 0.3)
+            fftSize: 1024, // OPTIMIZED: Faster response for voice detection (was 2048)
+            soundTheme: savedPrefs.soundTheme || 'adaptive-noise', // 'adaptive-noise', 'rain', 'ocean', 'wind'
+            currentIntensity: 'light', // Tracks current intensity for natural recordings
+            sleepTimerMinutes: savedPrefs.sleepTimerMinutes || 0, // Sleep timer in minutes (0 = no timer)
+            timerFavorites: savedPrefs.timerFavorites || [480, 20], // Default favorites: 8hr and 20min
+            fadeUpSpeed: savedPrefs.fadeUpSpeed || 1.0, // Seconds for fade up
+            holdDuration: savedPrefs.holdDuration || 2.0, // Seconds to hold at higher level
+            fadeDownSpeed: savedPrefs.fadeDownSpeed || 3.0, // Seconds for fade down
+            threshold1: savedPrefs.threshold1 || 15, // Light to Medium threshold
+            threshold2: savedPrefs.threshold2 || 60, // Medium to Heavy threshold
+            // Sound library preferences
+            soundLibrary: savedPrefs.soundLibrary || {
+                white: 'classic',
+                green: 'nature',
+                brown: 'deep',
+                pink: 'balanced',
+                rain: 'light',
+                ocean: 'gentle',
+                wind: 'breeze'
+            },
+            dayModeBackground: savedPrefs.dayModeBackground || null,
+            nightModeBackground: savedPrefs.nightModeBackground || null
+        };
+
+        // Audio recording URLs - Natural sound recordings
+        // Rain sounds are PERFECT from Mixkit - keeping these!
+        // Ocean & Wind now using Freesound.org previews
+        const audioLibrary = {
+            rain: {
+                light: 'https://assets.mixkit.co/active_storage/sfx/2393/2393-preview.mp3',
+                medium: 'https://assets.mixkit.co/active_storage/sfx/2394/2394-preview.mp3',
+                heavy: 'https://assets.mixkit.co/active_storage/sfx/2395/2395-preview.mp3'
+            },
+            ocean: {
+                // 🌊 MIXKIT OCEAN SOUNDS - Actual IDs from downloaded files!
+                light: 'https://assets.mixkit.co/active_storage/sfx/1208/1208-preview.mp3',   // Small waves harbor rocks
+                medium: 'https://assets.mixkit.co/active_storage/sfx/1195/1195-preview.mp3',  // Close sea waves loop
+                heavy: 'https://assets.mixkit.co/active_storage/sfx/1194/1194-preview.mp3'    // Rough sea waves loop
+            },
+            stream: {
+                // 💧 MIXKIT STREAM/WATER SOUNDS - Actual IDs from downloaded files!
+                light: 'https://assets.mixkit.co/active_storage/sfx/2450/2450-preview.mp3',  // River atmosphere in a forest
+                medium: 'https://assets.mixkit.co/active_storage/sfx/2454/2454-preview.mp3',  // River water flowing
+                heavy: 'https://assets.mixkit.co/active_storage/sfx/2461/2461-preview.mp3'   // Strong flowing waters noise
+            }
+        };
+
+        // Audio player for natural recordings - NO SYNTHESIZED FALLBACK
+        class NaturalSoundPlayer {
+            constructor() {
+                this.audioElements = {};
+                this.currentTheme = null;
+                this.currentIntensity = null;
+                this.isLoaded = {};
+                this.fadeTime = 1.0; // SMOOTH: 1-second crossfade for seamless transitions
+                this.failedToLoad = {};
+            }
+
+            async preload(theme) {
+                if (this.isLoaded[theme]) {
+                    log(`${theme} already loaded`, false);
+                    return;
+                }
+                
+                log(`Loading ${theme} audio files...`, true);
+                this.audioElements[theme] = {};
+                const loadResults = [];
+                
+                for (const intensity of ['light', 'medium', 'heavy']) {
+                    const audio = new Audio();
+                    audio.crossOrigin = 'anonymous';
+                    audio.loop = true;
+                    audio.preload = 'auto';
+                    audio.volume = 0;
+                    
+                    const url = audioLibrary[theme][intensity];
+                    audio.src = url;
+                    
+                    this.audioElements[theme][intensity] = audio;
+                    
+                    const loadPromise = new Promise((resolve, reject) => {
+                        const timeout = setTimeout(() => {
+                            reject(new Error(`Timeout loading ${intensity} ${theme}`));
+                        }, 15000); // 15 second timeout
+                        
+                        audio.addEventListener('canplaythrough', () => {
+                            clearTimeout(timeout);
+                            log(`✓ Loaded ${intensity} ${theme}`, false);
+                            resolve({ intensity, success: true });
+                        }, { once: true });
+                        
+                        audio.addEventListener('error', (e) => {
+                            clearTimeout(timeout);
+                            const errorMsg = audio.error ? 
+                                `Error ${audio.error.code}: ${audio.error.message}` : 
+                                'Unknown error';
+                            log(`✗ Failed: ${intensity} ${theme} - ${errorMsg}`, true);
+                            reject(new Error(`Failed to load ${intensity} ${theme}`));
+                        }, { once: true });
+                        
+                        audio.load();
+                    });
+                    
+                    loadResults.push(loadPromise.catch(e => ({ intensity, success: false, error: e.message })));
+                }
+                
+                const results = await Promise.all(loadResults);
+                const failedCount = results.filter(r => !r.success).length;
+                
+                if (failedCount === 3) {
+                    this.failedToLoad[theme] = true;
+                    throw new Error(`All ${theme} audio files failed to load. Check your internet connection or try a different browser.`);
+                } else if (failedCount > 0) {
+                    log(`⚠️ ${failedCount}/3 ${theme} files failed to load`, true);
+                    this.failedToLoad[theme] = false;
+                } else {
+                    log(`✅ All ${theme} files ready!`, true);
+                    this.failedToLoad[theme] = false;
+                }
+                
+                this.isLoaded[theme] = true;
+            }
+
+            play(theme, intensity, targetVolume) {
+                if (!this.audioElements[theme]) {
+                    log('⚠️ Audio not loaded - click Preview first', true);
+                    return;
+                }
+
+                const newAudio = this.audioElements[theme][intensity];
+                
+                if (!newAudio || newAudio.error) {
+                    log(`⚠️ ${intensity} audio unavailable`, true);
+                    return;
+                }
+                
+                // Crossfade between intensities
+                if (this.currentTheme === theme && this.currentIntensity !== intensity) {
+                    const oldAudio = this.audioElements[theme][this.currentIntensity];
+                    
+                    if (oldAudio && !oldAudio.error) {
+                        newAudio.volume = 0;
+                        const playPromise = newAudio.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(e => log(`Play error: ${e.message}`, true));
+                        }
+                        this.crossfade(oldAudio, newAudio, targetVolume);
+                        log(`Crossfading to ${intensity} ${theme}`, false);
+                    }
+                }
+                // First time or switching theme
+                else if (this.currentTheme !== theme || this.currentIntensity !== intensity) {
+                    this.stopAll();
+                    newAudio.volume = targetVolume;
+                    const playPromise = newAudio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(e => log(`Play error: ${e.message}`, true));
+                    }
+                    log(`▶️ Playing ${intensity} ${theme}`, true);
+                }
+                // Just update volume
+                else {
+                    newAudio.volume = targetVolume;
+                }
+                
+                this.currentTheme = theme;
+                this.currentIntensity = intensity;
+            }
+
+            crossfade(oldAudio, newAudio, targetVolume) {
+                const steps = 30;
+                const fadeTime = config.fadeUpSpeed || 1.0; // Use user-configured fade time
+                const interval = (fadeTime * 1000) / steps;
+                let step = 0;
+                
+                const fadeInterval = setInterval(() => {
+                    step++;
+                    const progress = step / steps;
+                    
+                    if (oldAudio && !oldAudio.error) {
+                        oldAudio.volume = Math.max(0, oldAudio.volume * (1 - progress));
+                    }
+                    if (newAudio && !newAudio.error) {
+                        newAudio.volume = targetVolume * progress;
+                    }
+                    
+                    if (step >= steps) {
+                        clearInterval(fadeInterval);
+                        if (oldAudio) {
+                            oldAudio.pause();
+                            oldAudio.currentTime = 0;
+                        }
+                    }
+                }, interval);
+            }
+
+            setVolume(volume) {
+                if (this.currentTheme && this.currentIntensity) {
+                    const audio = this.audioElements[this.currentTheme][this.currentIntensity];
+                    if (audio && !audio.error) {
+                        audio.volume = Math.max(0, Math.min(1, volume));
+                    }
+                }
+            }
+
+            stopAll() {
+                for (const theme in this.audioElements) {
+                    for (const intensity in this.audioElements[theme]) {
+                        const audio = this.audioElements[theme][intensity];
+                        if (audio) {
+                            audio.pause();
+                            audio.currentTime = 0;
+                            audio.volume = 0;
+                        }
+                    }
+                }
+                this.currentTheme = null;
+                this.currentIntensity = null;
+            }
+        }
+
+        const naturalSoundPlayer = new NaturalSoundPlayer();
+
+        // Noise thresholds (adjusted for improved detection sensitivity)
+        const thresholds = {
+            1: { quiet: 15, moderate: 30, loud: 50 }, // Low sensitivity
+            2: { quiet: 10, moderate: 20, loud: 35 }, // Medium sensitivity (default)
+            3: { quiet: 5, moderate: 15, loud: 25 }   // High sensitivity
+        };
+
+        // UI Elements
+        const toggleBtn = document.getElementById('toggleBtn');
+        const statusEl = document.getElementById('status');
+        const ambientLevelEl = document.getElementById('ambientLevel');
+        const outputVolumeEl = document.getElementById('outputVolume');
+        const noiseTypeEl = document.getElementById('noiseType');
+        const noiseMeterEl = document.getElementById('noiseMeter');
+        const rawLevelEl = document.getElementById('rawLevel');
+        const logPanelEl = document.getElementById('logPanel');
+        const baselineVolumeSlider = document.getElementById('baselineVolume');
+        const baselineValueEl = document.getElementById('baselineValue');
+        const sensitivitySlider = document.getElementById('sensitivity');
+        const sensitivityValueEl = document.getElementById('sensitivityValue');
+        const settingsPanel = document.querySelector('.settings-panel');
+        const themeToggle = document.getElementById('themeToggle');
+        const lowNoiseTypeSelect = document.getElementById('lowNoiseType');
+        const soundThemeSelect = document.getElementById('soundThemeSelect');
+        const previewThemeBtn = document.getElementById('previewThemeBtn');
+        const themeInfoEl = document.getElementById('themeInfo');
+        const adaptiveNoiseSettings = document.getElementById('adaptiveNoiseSettings');
+
+        // White noise generator
+        // White noise generator with multiple variants
+        class WhiteNoiseGenerator {
+            constructor(audioContext) {
+                this.audioContext = audioContext;
+                this.bufferSize = audioContext.sampleRate * 2;
+                this.buffer = null;
+                this.source = null;
+            }
+
+            // WHITE NOISE VARIANTS
+            generateWhiteClassic() {
+                const buffer = this.audioContext.createBuffer(1, this.bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < this.bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                return buffer;
+            }
+
+            generateWhiteSmooth() {
+                // Slightly filtered white noise
+                const buffer = this.audioContext.createBuffer(1, this.bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                let last = 0;
+                for (let i = 0; i < this.bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    data[i] = (last * 0.3 + white * 0.7);
+                    last = data[i];
+                }
+                return buffer;
+            }
+
+            generateWhiteCrisp() {
+                // Enhanced high frequencies
+                const buffer = this.audioContext.createBuffer(1, this.bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < this.bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    data[i] = white * 1.2;
+                }
+                return buffer;
+            }
+
+            // GREEN NOISE VARIANTS
+            generateGreenNature() {
+                // Mid-range emphasis (nature-like)
+                const buffer = this.audioContext.createBuffer(1, this.bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                let b0 = 0, b1 = 0, b2 = 0;
+                for (let i = 0; i < this.bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    b0 = 0.99765 * b0 + white * 0.0990460;
+                    b1 = 0.96300 * b1 + white * 0.2965164;
+                    b2 = 0.57000 * b2 + white * 0.1526217;
+                    data[i] = b0 + b1 + b2 + white * 0.1848;
+                    data[i] *= 0.2;
+                }
+                return buffer;
+            }
+
+            generateGreenForest() {
+                // Deeper mid-range
+                const buffer = this.audioContext.createBuffer(1, this.bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                let b0 = 0, b1 = 0, b2 = 0;
+                for (let i = 0; i < this.bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    b0 = 0.99865 * b0 + white * 0.1190460;
+                    b1 = 0.97300 * b1 + white * 0.3465164;
+                    b2 = 0.67000 * b2 + white * 0.2026217;
+                    data[i] = b0 + b1 + b2 + white * 0.1348;
+                    data[i] *= 0.18;
+                }
+                return buffer;
+            }
+
+            generateGreenOcean() {
+                // Rolling, wave-like
+                const buffer = this.audioContext.createBuffer(1, this.bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                let b0 = 0, b1 = 0, b2 = 0;
+                for (let i = 0; i < this.bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    b0 = 0.98765 * b0 + white * 0.0790460;
+                    b1 = 0.95300 * b1 + white * 0.2565164;
+                    b2 = 0.47000 * b2 + white * 0.1126217;
+                    data[i] = b0 + b1 + b2 + white * 0.2248;
+                    data[i] *= 0.22;
+                }
+                return buffer;
+            }
+
+            // BROWN NOISE VARIANTS
+            generateBrownDeep() {
+                // Classic deep brown
+                const buffer = this.audioContext.createBuffer(1, this.bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                let lastOut = 0;
+                for (let i = 0; i < this.bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    data[i] = (lastOut + (0.02 * white)) / 1.02;
+                    lastOut = data[i];
+                    data[i] *= 3.5;
+                }
+                return buffer;
+            }
+
+            generateBrownRumble() {
+                // Extra deep
+                const buffer = this.audioContext.createBuffer(1, this.bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                let lastOut = 0;
+                for (let i = 0; i < this.bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    data[i] = (lastOut + (0.015 * white)) / 1.015;
+                    lastOut = data[i];
+                    data[i] *= 4.0;
+                }
+                return buffer;
+            }
+
+            generateBrownThunder() {
+                // Rolling, powerful
+                const buffer = this.audioContext.createBuffer(1, this.bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                let lastOut = 0;
+                for (let i = 0; i < this.bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    data[i] = (lastOut + (0.025 * white)) / 1.025;
+                    lastOut = data[i];
+                    data[i] *= 3.8;
+                }
+                return buffer;
+            }
+
+            // PINK NOISE VARIANTS
+            generatePinkBalanced() {
+                // Classic balanced pink
+                const buffer = this.audioContext.createBuffer(1, this.bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+                for (let i = 0; i < this.bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    b0 = 0.99886 * b0 + white * 0.0555179;
+                    b1 = 0.99332 * b1 + white * 0.0750759;
+                    b2 = 0.96900 * b2 + white * 0.1538520;
+                    b3 = 0.86650 * b3 + white * 0.3104856;
+                    b4 = 0.55000 * b4 + white * 0.5329522;
+                    b5 = -0.7616 * b5 - white * 0.0168980;
+                    data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+                    data[i] *= 0.11;
+                    b6 = white * 0.115926;
+                }
+                return buffer;
+            }
+
+            generatePinkSoft() {
+                // Gentler pink
+                const buffer = this.audioContext.createBuffer(1, this.bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+                for (let i = 0; i < this.bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    b0 = 0.99886 * b0 + white * 0.0455179;
+                    b1 = 0.99332 * b1 + white * 0.0650759;
+                    b2 = 0.96900 * b2 + white * 0.1338520;
+                    b3 = 0.86650 * b3 + white * 0.2804856;
+                    b4 = 0.55000 * b4 + white * 0.4829522;
+                    b5 = -0.7616 * b5 - white * 0.0148980;
+                    data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.4862;
+                    data[i] *= 0.12;
+                    b6 = white * 0.105926;
+                }
+                return buffer;
+            }
+
+            generatePinkBright() {
+                // More high-frequency content
+                const buffer = this.audioContext.createBuffer(1, this.bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+                for (let i = 0; i < this.bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    b0 = 0.99886 * b0 + white * 0.0655179;
+                    b1 = 0.99332 * b1 + white * 0.0850759;
+                    b2 = 0.96900 * b2 + white * 0.1738520;
+                    b3 = 0.86650 * b3 + white * 0.3404856;
+                    b4 = 0.55000 * b4 + white * 0.5829522;
+                    b5 = -0.7616 * b5 - white * 0.0188980;
+                    data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5862;
+                    data[i] *= 0.10;
+                    b6 = white * 0.125926;
+                }
+                return buffer;
+            }
+
+            start(color = 'green', variant = null) {
+                this.stop();
+                
+                // Determine which variant to use
+                const selectedVariant = variant || config.soundLibrary[color];
+                
+                // Generate appropriate noise based on color and variant
+                if (color === 'white') {
+                    if (selectedVariant === 'smooth') this.buffer = this.generateWhiteSmooth();
+                    else if (selectedVariant === 'crisp') this.buffer = this.generateWhiteCrisp();
+                    else this.buffer = this.generateWhiteClassic();
+                } else if (color === 'green') {
+                    if (selectedVariant === 'forest') this.buffer = this.generateGreenForest();
+                    else if (selectedVariant === 'ocean') this.buffer = this.generateGreenOcean();
+                    else this.buffer = this.generateGreenNature();
+                } else if (color === 'brown') {
+                    if (selectedVariant === 'rumble') this.buffer = this.generateBrownRumble();
+                    else if (selectedVariant === 'thunder') this.buffer = this.generateBrownThunder();
+                    else this.buffer = this.generateBrownDeep();
+                } else if (color === 'pink') {
+                    if (selectedVariant === 'soft') this.buffer = this.generatePinkSoft();
+                    else if (selectedVariant === 'bright') this.buffer = this.generatePinkBright();
+                    else this.buffer = this.generatePinkBalanced();
+                }
+
+                this.source = this.audioContext.createBufferSource();
+                this.source.buffer = this.buffer;
+                this.source.loop = true;
+                return this.source;
+            }
+
+            stop() {
+                if (this.source) {
+                    this.source.stop();
+                    this.source = null;
+                }
+            }
+        }
+
+        // Initialize audio system
+        async function initAudio() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Create audio nodes
+            gainNode = audioContext.createGain();
+            gainNode.gain.value = config.currentVolume;
+            
+            filterNode = audioContext.createBiquadFilter();
+            filterNode.type = 'lowpass';
+            filterNode.frequency.value = 5000;
+            
+            // Only create and start noise generator for adaptive-noise theme
+            if (config.soundTheme === 'adaptive-noise') {
+                noiseNode = new WhiteNoiseGenerator(audioContext);
+                const source = noiseNode.start(config.lowNoiseType);
+                
+                // Connect: source -> filter -> gain -> destination
+                source.connect(filterNode);
+                filterNode.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // CRITICAL: Start the audio source!
+                source.start(0);
+            }
+            
+            // Setup microphone
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = config.fftSize;
+            analyser.smoothingTimeConstant = config.smoothing;
+            
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            microphone = audioContext.createMediaStreamSource(stream);
+            microphone.mediaStream = stream; // Store for cleanup
+            microphone.connect(analyser);
+            
+            log('Audio system initialized');
+        }
+
+        // Get ambient noise level with improved detection
+        let peakLevel = 0;
+        let peakDecay = 0.95; // SMOOTH: Gradual decay for natural transitions (keeps sensitivity but smooths response)
+        
+        function getAmbientNoiseLevel() {
+            // Use BOTH frequency and time domain for better detection
+            const freqArray = new Uint8Array(analyser.frequencyBinCount);
+            const timeArray = new Uint8Array(analyser.fftSize);
+            
+            analyser.getByteFrequencyData(freqArray);
+            analyser.getByteTimeDomainData(timeArray);
+            
+            // Calculate frequency domain average (good for sustained sounds)
+            let freqSum = 0;
+            for (let i = 0; i < freqArray.length; i++) {
+                freqSum += freqArray[i];
+            }
+            const freqAverage = freqSum / freqArray.length;
+            
+            // Calculate time domain RMS (good for transient sounds like claps/voices)
+            let timeSum = 0;
+            for (let i = 0; i < timeArray.length; i++) {
+                const normalized = (timeArray[i] - 128) / 128; // Convert to -1 to 1
+                timeSum += normalized * normalized;
+            }
+            const rms = Math.sqrt(timeSum / timeArray.length) * 255 * 1.8; // OPTIMIZED: Boosted 1.8x for better voice detection
+            
+            // Use the HIGHER of the two measurements (catches both sustained and transient)
+            const currentLevel = Math.max(freqAverage, rms * 1.2); // OPTIMIZED: Extra 1.2x boost for voice priority
+            
+            // Peak detection with decay - holds peaks longer for better response
+            peakLevel = Math.max(currentLevel, peakLevel * peakDecay);
+            
+            // Return the peak level (more responsive to sudden sounds)
+            return peakLevel;
+        }
+
+        // Adaptive algorithm
+        function adaptiveLoop() {
+            if (!isRunning) return;
+            
+            const ambientLevel = getAmbientNoiseLevel();
+            const threshold = thresholds[config.sensitivity];
+            
+            // Update UI with both processed and raw values
+            ambientLevelEl.textContent = Math.round(ambientLevel);
+            rawLevelEl.textContent = Math.round(peakLevel);
+            
+            // Scale meter: Show full 0-100 range so color zones are visible
+            const meterPercent = Math.min(ambientLevel, 100);
+            noiseMeterEl.style.width = `${meterPercent}%`;
+            
+            // CHECK MODE: Natural recordings vs Adaptive noise
+            if (config.soundTheme !== 'adaptive-noise') {
+                // ===== NATURAL RECORDINGS MODE (Rain/Ocean/Wind) =====
+                // Determine intensity based on ambient level
+                let targetIntensity;
+                let targetColor;
+                if (ambientLevel < config.threshold1) {
+                    targetIntensity = 'light';
+                    targetColor = 'green';
+                } else if (ambientLevel < config.threshold2) {
+                    targetIntensity = 'medium';
+                    targetColor = 'brown';
+                } else {
+                    targetIntensity = 'heavy';
+                    targetColor = 'pink';
+                }
+                
+                // Switch intensity if needed (with debounce)
+                const now = Date.now();
+                const timeSinceLastSwitch = now - config.lastColorSwitch;
+                const holdDurationMs = (config.holdDuration || 2.0) * 1000; // Convert seconds to milliseconds
+                
+                if (targetIntensity !== config.currentIntensity && timeSinceLastSwitch > holdDurationMs) {
+                    config.currentIntensity = targetIntensity;
+                    config.lastColorSwitch = now;
+                    
+                    const intensityLabels = { light: 'Light', medium: 'Medium', heavy: 'Heavy' };
+                    
+                    // Update color indicator
+                    noiseTypeEl.textContent = intensityLabels[targetIntensity];
+                    noiseTypeEl.className = 'status-value ' + targetColor;
+                    
+                    log(`Ambient ${Math.round(ambientLevel)} → ${intensityLabels[targetIntensity]} ${config.soundTheme}`, true);
+                }
+                
+                // Determine target volume based on ambient level
+                if (ambientLevel > threshold.loud) {
+                    if (config.currentVolume < config.maxVolume) {
+                        config.targetVolume = Math.min(config.currentVolume + config.volumeIncrement, config.maxVolume);
+                        log(`Loud noise! Increasing to ${Math.round(config.targetVolume * 100)}%`, true);
+                    }
+                } else if (ambientLevel > threshold.moderate) {
+                    const targetForLevel = Math.min(0.5 + (ambientLevel / 100), config.maxVolume);
+                    config.targetVolume = targetForLevel;
+                } else if (ambientLevel > threshold.quiet) {
+                    const targetForLevel = Math.min(config.baselineVolume + 0.2, 0.6);
+                    config.targetVolume = targetForLevel;
+                } else {
+                    config.targetVolume = config.baselineVolume;
+                }
+                
+                // SMOOTH volume transition - use fade speed settings
+                const diff = config.targetVolume - config.currentVolume;
+                // Calculate interpolation speed based on direction
+                // Faster fade up when increasing, slower fade down when decreasing
+                const fadeSpeed = diff > 0 ? 
+                    (1 / (config.fadeUpSpeed * 60)) :  // Fade up: faster = higher multiplier
+                    (1 / (config.fadeDownSpeed * 60)); // Fade down: slower = lower multiplier
+                config.currentVolume += diff * fadeSpeed;
+                
+                // Update natural sound player
+                naturalSoundPlayer.play(config.soundTheme, config.currentIntensity, config.currentVolume);
+                
+            } else {
+                // ===== ADAPTIVE NOISE MODE (White/Green/Brown/Pink) =====
+                const now = Date.now();
+                const timeSinceLastSwitch = now - config.lastColorSwitch;
+                const holdDurationMs = (config.holdDuration || 2.0) * 1000; // Convert seconds to milliseconds
+                
+                // Only switch colors if enough time has passed (prevents rapid flickering)
+                if (timeSinceLastSwitch > holdDurationMs) {
+                    if (ambientLevel < config.threshold1 && config.noiseColor !== config.lowNoiseType) {
+                        // Quiet - use selected low noise type (white or green)
+                        switchNoiseColor(config.lowNoiseType);
+                        config.lastColorSwitch = now;
+                        const colorLabel = config.lowNoiseType === 'green' ? 'GREEN' : 'WHITE';
+                        log(`Quiet environment (${Math.round(ambientLevel)}) - using ${colorLabel} noise`);
+                    } else if (ambientLevel >= config.threshold1 && ambientLevel < config.threshold2 && config.noiseColor !== 'brown') {
+                        // Voice/talking range - use brown noise (better for voices)
+                        switchNoiseColor('brown');
+                        config.lastColorSwitch = now;
+                        log(`Voices detected (${Math.round(ambientLevel)}) - switching to BROWN noise`, true);
+                    } else if (ambientLevel >= config.threshold2 && config.noiseColor !== 'pink') {
+                        // Very loud - use pink noise
+                        switchNoiseColor('pink');
+                        config.lastColorSwitch = now;
+                        log(`Very loud noise (${Math.round(ambientLevel)}) - switching to PINK noise`, true);
+                    }
+                }
+                
+                // Determine volume adjustment based on ambient level
+                if (ambientLevel > threshold.loud) {
+                    if (config.currentVolume < config.maxVolume) {
+                        config.targetVolume = Math.min(config.currentVolume + config.volumeIncrement, config.maxVolume);
+                        log(`Loud noise detected! (${Math.round(ambientLevel)}) Increasing volume to ${Math.round(config.targetVolume * 100)}%`, true);
+                    }
+                } else if (ambientLevel > threshold.moderate) {
+                    const targetForLevel = Math.min(0.5 + (ambientLevel / 100), config.maxVolume);
+                    if (config.currentVolume < targetForLevel) {
+                        config.targetVolume = Math.min(config.currentVolume + config.volumeIncrement, targetForLevel);
+                        log(`Moderate noise (${Math.round(ambientLevel)}) - adjusting volume to ${Math.round(config.targetVolume * 100)}%`);
+                    } else if (config.currentVolume > targetForLevel + 0.1) {
+                        config.targetVolume = Math.max(config.currentVolume - config.volumeDecrement, targetForLevel);
+                        log(`Volume too high - decreasing to ${Math.round(config.targetVolume * 100)}%`, true);
+                    }
+                } else if (ambientLevel > threshold.quiet) {
+                    const targetForLevel = Math.min(config.baselineVolume + 0.2, 0.6);
+                    if (config.currentVolume > targetForLevel) {
+                        config.targetVolume = Math.max(config.currentVolume - config.volumeDecrement, targetForLevel);
+                        if (Math.random() < 0.05) {
+                            log(`Slight noise (${Math.round(ambientLevel)}) - gradually decreasing to ${Math.round(config.targetVolume * 100)}%`);
+                        }
+                    } else if (config.currentVolume < targetForLevel) {
+                        config.targetVolume = Math.min(config.currentVolume + config.volumeIncrement * 0.3, targetForLevel);
+                    }
+                } else {
+                    if (config.currentVolume > config.baselineVolume + 0.05) {
+                        config.targetVolume = Math.max(config.currentVolume - config.volumeDecrement, config.baselineVolume);
+                        if (Math.random() < 0.03) {
+                            log(`Quiet (${Math.round(ambientLevel)}) - returning to baseline ${Math.round(config.baselineVolume * 100)}%`);
+                        }
+                    }
+                }
+                
+                // SMOOTH volume transition - use fade speed settings
+                const diff = config.targetVolume - config.currentVolume;
+                // Calculate interpolation speed based on direction
+                const fadeSpeed = diff > 0 ? 
+                    (1 / (config.fadeUpSpeed * 60)) :  // Fade up: faster = higher multiplier
+                    (1 / (config.fadeDownSpeed * 60)); // Fade down: slower = lower multiplier
+                config.currentVolume += diff * fadeSpeed;
+                gainNode.gain.value = config.currentVolume;
+            }
+            
+            // Update UI
+            outputVolumeEl.textContent = `${Math.round(config.currentVolume * 100)}%`;
+            
+            animationFrame = requestAnimationFrame(adaptiveLoop);
+        }
+
+        // Switch noise color
+        function switchNoiseColor(color) {
+            if (config.noiseColor === color) return;
+            
+            config.noiseColor = color;
+            
+            // Stop current noise and disconnect
+            if (noiseNode && noiseNode.source) {
+                try {
+                    noiseNode.source.stop();
+                    noiseNode.source.disconnect();
+                } catch (e) {
+                    // Source may already be stopped
+                }
+            }
+            
+            // Start new noise with new color
+            noiseNode.start(color);
+            const source = noiseNode.source;
+            source.connect(filterNode);
+            source.start(0); // Start the new source!
+            
+            // Update UI with color coding
+            const colorNames = { white: 'White', green: 'Green', pink: 'Pink', brown: 'Brown' };
+            noiseTypeEl.textContent = colorNames[color];
+            noiseTypeEl.className = 'status-value ' + color;
+        }
+
+        // Logging
+        function log(message, highlight = false) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry' + (highlight ? ' highlight' : '');
+            const time = new Date().toLocaleTimeString();
+            entry.textContent = `[${time}] ${message}`;
+            logPanelEl.appendChild(entry);
+            logPanelEl.scrollTop = logPanelEl.scrollHeight;
+            
+            // Keep only last 20 entries
+            while (logPanelEl.children.length > 20) {
+                logPanelEl.removeChild(logPanelEl.firstChild);
+            }
+        }
+
+        // Check permissions
+        async function checkMicPermission() {
+            try {
+                const result = await navigator.permissions.query({ name: 'microphone' });
+                return result.state;
+            } catch (e) {
+                return 'unknown';
+            }
+        }
+
+        // Toggle button
+        let lastClickTime = 0;
+        toggleBtn.addEventListener('click', async () => {
+            // Emergency force stop on double-click
+            const now = Date.now();
+            if (now - lastClickTime < 500 && isRunning) {
+                // Double-click detected - FORCE STOP EVERYTHING
+                log('🚨 EMERGENCY STOP - Force killing all audio', true);
+                isRunning = false;
+                clearSleepTimer(); // Clear sleep timer in emergency stop
+                
+                // Brute force cleanup
+                try {
+                    if (animationFrame) cancelAnimationFrame(animationFrame);
+                    if (noiseNode) noiseNode.stop();
+                    if (gainNode) { gainNode.gain.value = 0; gainNode.disconnect(); }
+                    if (filterNode) filterNode.disconnect();
+                    if (analyser) analyser.disconnect();
+                    if (microphone && microphone.mediaStream) {
+                        microphone.mediaStream.getTracks().forEach(track => track.stop());
+                    }
+                    if (audioContext) audioContext.close();
+                } catch (e) {
+                    console.log('Force stop:', e);
+                }
+                
+                // Reset everything
+                audioContext = null;
+                noiseNode = null;
+                gainNode = null;
+                filterNode = null;
+                analyser = null;
+                microphone = null;
+                animationFrame = null;
+                
+                toggleBtn.textContent = 'Start Adaptive Mode';
+                toggleBtn.className = 'main-button start';
+                statusEl.textContent = 'Idle';
+                log('✅ Emergency stop complete', true);
+                return;
+            }
+            lastClickTime = now;
+            
+            if (!isRunning) {
+                try {
+                    // Check permission state first
+                    const permState = await checkMicPermission();
+                    
+                    if (permState === 'denied') {
+                        log('Microphone access denied by browser', true);
+                        alert('⚠️ Microphone Permission Blocked\n\n' +
+                              'To fix this:\n\n' +
+                              '1. Click the 🔒 lock icon (or ⓘ info icon) in your browser\'s address bar\n' +
+                              '2. Find "Microphone" in the permissions list\n' +
+                              '3. Change it from "Block" to "Allow"\n' +
+                              '4. Refresh this page\n' +
+                              '5. Try again\n\n' +
+                              'Chrome/Edge: Look for 🔒 or "Site settings"\n' +
+                              'Firefox: Look for 🔒 or "Permissions"\n' +
+                              'Safari: Check Safari > Settings > Websites > Microphone');
+                        return;
+                    }
+                    
+                    log('Requesting microphone access...', true);
+                    
+                    // Stop any preview audio (baseline volume preview)
+                    if (previewSource) {
+                        try {
+                            previewSource.stop();
+                        } catch (e) {}
+                    }
+                    if (previewTimeout) {
+                        clearTimeout(previewTimeout);
+                    }
+                    if (previewContext) {
+                        previewContext.close();
+                        previewContext = null;
+                    }
+                    
+                    await initAudio();
+                    
+                    // If using natural recordings, preload the audio
+                    if (config.soundTheme !== 'adaptive-noise') {
+                        log(`Loading ${config.soundTheme} recordings...`, true);
+                        statusEl.textContent = 'Loading audio...';
+                        await naturalSoundPlayer.preload(config.soundTheme);
+                        config.currentIntensity = 'light'; // Start with light
+                    }
+                    
+                    // Set initial volume from baseline
+                    config.currentVolume = config.baselineVolume;
+                    config.targetVolume = config.baselineVolume;
+                    config.lastColorSwitch = Date.now();
+                    if (gainNode) gainNode.gain.value = config.baselineVolume;
+                    
+                    isRunning = true;
+                    toggleBtn.textContent = 'Stop';
+                    toggleBtn.className = 'main-button stop';
+                    
+                    // Start sleep timer if configured
+                    if (config.sleepTimerMinutes > 0) {
+                        startSleepTimer(config.sleepTimerMinutes);
+                    }
+                    
+                    if (config.soundTheme !== 'adaptive-noise') {
+                        // Natural recordings mode
+                        const themeLabels = { rain: 'Rain', ocean: 'Ocean', wind: 'Wind' };
+                        statusEl.textContent = `Playing ${themeLabels[config.soundTheme]}`;
+                        log(`✅ Started! ${themeLabels[config.soundTheme]} mode - adapts from light → heavy`, true);
+                        log(`📊 Ambient noise controls intensity and volume`, false);
+                    } else {
+                        // Adaptive noise mode
+                        statusEl.textContent = 'Active - Monitoring';
+                        config.noiseColor = config.lowNoiseType;
+                        const initialTypeLabel = config.lowNoiseType === 'green' ? 'Green' : 'White';
+                        noiseTypeEl.textContent = initialTypeLabel;
+                        noiseTypeEl.className = 'status-value ' + config.lowNoiseType;
+                        log(`✅ Started! ${initialTypeLabel} noise at ` + Math.round(config.baselineVolume * 100) + '%', true);
+                        log(`🎨 Colors adapt: ${initialTypeLabel} (<15) → Brown (15-60) → Pink (60+)`, false);
+                    }
+                    
+                    adaptiveLoop();
+                } catch (error) {
+                    log('Error: ' + error.message, true);
+                    
+                    let errorMsg = '⚠️ Could Not Access Microphone\n\n';
+                    
+                    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                        errorMsg += 'You need to allow microphone access for this app to work.\n\n' +
+                                   'How to fix:\n' +
+                                   '1. Click the 🔒 lock icon in your address bar\n' +
+                                   '2. Find "Microphone" and set to "Allow"\n' +
+                                   '3. Refresh the page and try again';
+                    } else if (error.name === 'NotFoundError') {
+                        errorMsg += 'No microphone found on your device.\n\n' +
+                                   'Make sure:\n' +
+                                   '• Your device has a microphone\n' +
+                                   '• It\'s properly connected\n' +
+                                   '• Other apps can access it';
+                    } else if (error.name === 'NotReadableError') {
+                        errorMsg += 'Your microphone is in use by another app.\n\n' +
+                                   'Please close other apps using the microphone and try again.';
+                    } else {
+                        errorMsg += 'Error: ' + error.message + '\n\n' +
+                                   'Try:\n' +
+                                   '• Refreshing the page\n' +
+                                   '• Using a different browser\n' +
+                                   '• Checking your microphone settings';
+                    }
+                    
+                    alert(errorMsg);
+                }
+            } else {
+                isRunning = false;
+                clearSleepTimer(); // Clear sleep timer when manually stopping
+                
+                // CRITICAL: Force stop everything immediately
+                try {
+                    // Cancel animation loop
+                    if (animationFrame) {
+                        cancelAnimationFrame(animationFrame);
+                        animationFrame = null;
+                    }
+                    
+                    // Stop noise generator
+                    if (noiseNode) {
+                        try {
+                            noiseNode.stop();
+                        } catch (e) {
+                            console.log('Noise node already stopped:', e);
+                        }
+                        noiseNode = null;
+                    }
+                    
+                    // Stop natural sound player
+                    naturalSoundPlayer.stopAll();
+                    
+                    // Disconnect gain node immediately to silence audio
+                    if (gainNode) {
+                        try {
+                            gainNode.disconnect();
+                            gainNode.gain.value = 0;
+                        } catch (e) {
+                            console.log('Gain node already disconnected:', e);
+                        }
+                        gainNode = null;
+                    }
+                    
+                    // Disconnect filter node
+                    if (filterNode) {
+                        try {
+                            filterNode.disconnect();
+                        } catch (e) {
+                            console.log('Filter node already disconnected:', e);
+                        }
+                        filterNode = null;
+                    }
+                    
+                    // Disconnect analyser
+                    if (analyser) {
+                        try {
+                            analyser.disconnect();
+                        } catch (e) {
+                            console.log('Analyser already disconnected:', e);
+                        }
+                        analyser = null;
+                    }
+                    
+                    // Disconnect and close microphone stream
+                    if (microphone && microphone.mediaStream) {
+                        try {
+                            microphone.mediaStream.getTracks().forEach(track => {
+                                track.stop();
+                                console.log('Stopped track:', track.label);
+                            });
+                            microphone.disconnect();
+                        } catch (e) {
+                            console.log('Microphone cleanup error:', e);
+                        }
+                        microphone = null;
+                    }
+                    
+                    // Close audio context
+                    if (audioContext) {
+                        try {
+                            audioContext.close().then(() => {
+                                console.log('Audio context closed successfully');
+                            });
+                        } catch (e) {
+                            console.log('Audio context close error:', e);
+                        }
+                        audioContext = null;
+                    }
+                    
+                    // Reset UI
+                    toggleBtn.textContent = 'Start Adaptive Mode';
+                    toggleBtn.className = 'main-button start';
+                    statusEl.textContent = 'Idle';
+                    outputVolumeEl.textContent = `${Math.round(config.baselineVolume * 100)}%`;
+                    ambientLevelEl.textContent = '0';
+                    rawLevelEl.textContent = '0';
+                    noiseMeterEl.style.width = '0%';
+                    const resetTypeLabel = config.lowNoiseType === 'green' ? 'Green' : 'White';
+                    noiseTypeEl.textContent = resetTypeLabel;
+                    noiseTypeEl.className = 'status-value ' + config.lowNoiseType;
+                    
+                    // Reset config
+                    config.currentVolume = config.baselineVolume;
+                    config.targetVolume = config.baselineVolume;
+                    config.noiseColor = config.lowNoiseType;
+                    config.lastColorSwitch = 0;
+                    peakLevel = 0;
+                    
+                    log('✅ Stopped successfully - all audio resources released', true);
+                } catch (error) {
+                    log('Stop error (but should be silent now): ' + error.message, true);
+                    // Force reset everything even if errors occurred
+                    audioContext = null;
+                    noiseNode = null;
+                    gainNode = null;
+                    filterNode = null;
+                    analyser = null;
+                    microphone = null;
+                }
+            }
+        });
+
+        // Settings
+        // Load saved preferences into UI
+        baselineVolumeSlider.value = Math.round(config.baselineVolume * 100);
+        baselineValueEl.textContent = `${Math.round(config.baselineVolume * 100)}%`;
+        outputVolumeEl.textContent = `${Math.round(config.baselineVolume * 100)}%`;
+        sensitivitySlider.value = config.sensitivity;
+        const labels = { 1: 'Low', 2: 'Medium', 3: 'High' };
+        sensitivityValueEl.textContent = labels[config.sensitivity];
+        lowNoiseTypeSelect.value = config.lowNoiseType;
+        soundThemeSelect.value = config.soundTheme;
+        
+        // Update theme info and visibility
+        updateThemeInfo();
+        if (config.soundTheme === 'adaptive-noise') {
+            adaptiveNoiseSettings.style.display = 'block';
+        } else {
+            adaptiveNoiseSettings.style.display = 'none';
+        }
+        
+        // Set initial noise type display
+        const initialTypeLabel = config.lowNoiseType === 'green' ? 'Green' : 'White';
+        noiseTypeEl.textContent = initialTypeLabel;
+        noiseTypeEl.className = 'status-value ' + config.lowNoiseType;
+
+        // Apply saved theme (DEFAULT: dark)
+        if (!savedPrefs.theme || savedPrefs.theme === 'dark') {
+            document.body.classList.add('dark-theme');
+            themeToggle.textContent = '☀️';
+        }
+
+        // Audio for live preview
+        let previewContext = null;
+        let previewSource = null;
+        let previewGain = null;
+        let previewTimeout = null;
+
+        baselineVolumeSlider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            config.baselineVolume = value / 100;
+            baselineValueEl.textContent = `${value}%`;
+            
+            // Visual feedback
+            settingsPanel.classList.remove('flash');
+            void settingsPanel.offsetWidth; // Trigger reflow
+            settingsPanel.classList.add('flash');
+            
+            // Update output volume display to match when idle
+            if (!isRunning) {
+                outputVolumeEl.textContent = `${value}%`;
+            }
+            
+            // LIVE PREVIEW: Play sound at this volume for 2 seconds as you adjust
+            if (!isRunning) {
+                // Stop any existing preview
+                if (previewSource) {
+                    try {
+                        previewSource.stop();
+                    } catch (e) {}
+                }
+                if (previewTimeout) {
+                    clearTimeout(previewTimeout);
+                }
+                if (previewContext) {
+                    previewContext.close();
+                }
+                
+                // Start new preview
+                try {
+                    previewContext = new (window.AudioContext || window.webkitAudioContext)();
+                    previewGain = previewContext.createGain();
+                    previewGain.gain.value = config.baselineVolume;
+                    
+                    const previewNoise = new WhiteNoiseGenerator(previewContext);
+                    previewSource = previewNoise.start(config.lowNoiseType);
+                    previewSource.connect(previewGain);
+                    previewGain.connect(previewContext.destination);
+                    previewSource.start(0);
+                    
+                    // Auto-stop after 2 seconds
+                    previewTimeout = setTimeout(() => {
+                        if (previewSource) {
+                            previewSource.stop();
+                            previewContext.close();
+                            previewSource = null;
+                            previewContext = null;
+                        }
+                    }, 2000);
+                } catch (e) {
+                    console.error('Preview failed:', e);
+                }
+                
+                const previewTypeLabel = config.lowNoiseType === 'green' ? 'Green' : 'White';
+                log(`🔊 Preview: ${value}% ${previewTypeLabel} noise - Adjust to find your perfect level`, false);
+            }
+            
+            // If running, immediately update current volume if we're at or near baseline
+            if (isRunning && gainNode) {
+                // If we're currently at or below the old baseline, update to new baseline
+                if (config.currentVolume <= config.baselineVolume + 0.05) {
+                    config.currentVolume = config.baselineVolume;
+                    config.targetVolume = config.baselineVolume;
+                    gainNode.gain.value = config.baselineVolume;
+                    outputVolumeEl.textContent = `${value}%`;
+                }
+                log(`Baseline volume adjusted to ${value}% (takes effect immediately)`, true);
+            }
+            
+            // Save preference
+            savePreferences();
+        });
+
+        sensitivitySlider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            config.sensitivity = value;
+            const labels = { 1: 'Low', 2: 'Medium', 3: 'High' };
+            sensitivityValueEl.textContent = labels[value];
+            
+            // Visual feedback
+            settingsPanel.classList.remove('flash');
+            void settingsPanel.offsetWidth; // Trigger reflow
+            settingsPanel.classList.add('flash');
+            
+            // Show what the new thresholds mean
+            const threshold = thresholds[value];
+            if (isRunning) {
+                log(`Sensitivity → ${labels[value]}: Will react to noise levels above ${threshold.loud}`, true);
+            } else {
+                log(`Sensitivity: ${labels[value]} - Reacts at ${threshold.loud}+ (test with a clap!)`, false);
+            }
+            
+            // Save preference
+            savePreferences();
+        });
+
+        // Low noise type selector
+        lowNoiseTypeSelect.addEventListener('change', (e) => {
+            config.lowNoiseType = e.target.value;
+            const typeLabel = e.target.value === 'green' ? 'Green Noise (softer)' : 'White Noise (classic)';
+            log(`Low noise type changed to: ${typeLabel}`, true);
+            
+            // If currently playing low noise and not running, update immediately
+            if (!isRunning) {
+                log(`This will be used when ambient level is below 15`, false);
+            } else if (config.noiseColor === 'white' || config.noiseColor === 'green') {
+                // Currently playing low noise - switch to new type
+                switchNoiseColor(config.lowNoiseType);
+                config.lastColorSwitch = Date.now();
+                log(`Switched to ${typeLabel} immediately`, true);
+            }
+            
+            // Save preference
+            savePreferences();
+        });
+
+        // Sound theme selector
+        soundThemeSelect.addEventListener('change', (e) => {
+            const oldTheme = config.soundTheme;
+            config.soundTheme = e.target.value;
+            
+            // Update theme info
+            updateThemeInfo();
+            
+            // Show/hide adaptive noise settings
+            if (config.soundTheme === 'adaptive-noise') {
+                adaptiveNoiseSettings.style.display = 'block';
+            } else {
+                adaptiveNoiseSettings.style.display = 'none';
+            }
+            
+            if (isRunning) {
+                log('⚠️ Stop and restart to apply new sound theme', true);
+            } else {
+                log(`Theme: ${getThemeLabel(config.soundTheme)}`, true);
+            }
+            
+            savePreferences();
+        });
+
+        // Theme preview button with cancellation support
+        let previewPlaying = false;
+        let previewCancelled = false;
+        let previewCtx = null;
+        let previewSrc = null;
+        
+        previewThemeBtn.addEventListener('click', async () => {
+            // If preview is playing, stop it
+            if (previewPlaying) {
+                previewCancelled = true;
+                if (previewCtx) {
+                    try {
+                        previewCtx.close();
+                        previewCtx = null;
+                    } catch (e) {}
+                }
+                if (previewSrc) {
+                    try {
+                        previewSrc.stop();
+                        previewSrc = null;
+                    } catch (e) {}
+                }
+                naturalSoundPlayer.stopAll();
+                previewPlaying = false;
+                previewThemeBtn.textContent = '▶️ Preview Theme (plays all 3 intensities)';
+                previewThemeBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+                log('Preview stopped', false);
+                return;
+            }
+            
+            const theme = config.soundTheme;
+            previewCancelled = false;
+            
+            if (theme === 'adaptive-noise') {
+                // Preview all 3 noise color stages: Green/White -> Brown -> Pink
+                previewPlaying = true;
+                previewThemeBtn.textContent = '⏹️ Stop Preview';
+                previewThemeBtn.style.background = 'rgba(239, 68, 68, 0.3)';
+                
+                try {
+                    log(`🎧 Previewing Adaptive Noise: ${config.lowNoiseType} → Brown → Pink`, true);
+                    
+                    // Create audio context and gain node
+                    previewCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const previewGainNode = previewCtx.createGain();
+                    previewGainNode.gain.value = 0.3;
+                    previewGainNode.connect(previewCtx.destination);
+                    
+                    const previewNoiseGen = new WhiteNoiseGenerator(previewCtx);
+                    
+                    // Stage 1: Low noise (green or white)
+                    if (previewCancelled) throw new Error('Preview cancelled');
+                    previewThemeBtn.textContent = `⏹️ Playing: ${config.lowNoiseType === 'green' ? 'Green' : 'White'} (quiet)`;
+                    previewSrc = previewNoiseGen.start(config.lowNoiseType);
+                    previewSrc.connect(previewGainNode);
+                    previewSrc.start(0);
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    if (previewCancelled) throw new Error('Preview cancelled');
+                    previewSrc.stop();
+                    
+                    // Stage 2: Brown noise (medium/voices)
+                    if (previewCancelled) throw new Error('Preview cancelled');
+                    previewThemeBtn.textContent = '⏹️ Playing: Brown (voices)';
+                    previewSrc = previewNoiseGen.start('brown');
+                    previewSrc.connect(previewGainNode);
+                    previewSrc.start(0);
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    if (previewCancelled) throw new Error('Preview cancelled');
+                    previewSrc.stop();
+                    
+                    // Stage 3: Pink noise (loud)
+                    if (previewCancelled) throw new Error('Preview cancelled');
+                    previewThemeBtn.textContent = '⏹️ Playing: Pink (loud)';
+                    previewSrc = previewNoiseGen.start('pink');
+                    previewSrc.connect(previewGainNode);
+                    previewSrc.start(0);
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    if (previewCancelled) throw new Error('Preview cancelled');
+                    previewSrc.stop();
+                    
+                    previewCtx.close();
+                    previewCtx = null;
+                    previewSrc = null;
+                    if (!previewCancelled) {
+                        log('Preview complete!', false);
+                    }
+                } catch (error) {
+                    if (error.message !== 'Preview cancelled') {
+                        log(`Preview error: ${error.message}`, true);
+                    }
+                } finally {
+                    previewPlaying = false;
+                    previewThemeBtn.textContent = '▶️ Preview Theme (plays all 3 intensities)';
+                    previewThemeBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+                }
+            } else {
+                // Preview natural recording - load and play all 3 levels
+                previewPlaying = true;
+                previewThemeBtn.textContent = '⏹️ Stop Preview';
+                previewThemeBtn.style.background = 'rgba(239, 68, 68, 0.3)';
+                
+                try {
+                    await naturalSoundPlayer.preload(theme);
+                    
+                    log(`🎧 Previewing ${theme} recordings`, true);
+                    
+                    for (const intensity of ['light', 'medium', 'heavy']) {
+                        if (previewCancelled) throw new Error('Preview cancelled');
+                        const intensityLabel = intensity.charAt(0).toUpperCase() + intensity.slice(1);
+                        previewThemeBtn.textContent = `⏹️ Playing: ${intensityLabel}`;
+                        naturalSoundPlayer.play(theme, intensity, 0.4);
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                    }
+                    
+                    naturalSoundPlayer.stopAll();
+                    if (!previewCancelled) {
+                        log(`Preview complete!`, false);
+                    }
+                    
+                } catch (error) {
+                    if (error.message !== 'Preview cancelled') {
+                        log(`Failed to load: ${error.message}`, true);
+                        alert(`⚠️ Audio Loading Failed\n\n${error.message}\n\nPossible fixes:\n• Check your internet connection\n• Try a different browser (Chrome recommended)\n• Disable ad blockers/privacy extensions\n• Check browser console for CORS errors`);
+                    }
+                } finally {
+                    previewPlaying = false;
+                    previewThemeBtn.textContent = '▶️ Preview Theme (plays all 3 intensities)';
+                    previewThemeBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+                }
+            }
+        });
+
+        // Update theme info text
+        function updateThemeInfo() {
+            const themeDescriptions = {
+                'adaptive-noise': '<strong>Adaptive Noise:</strong> Synthesized noise that switches colors (White/Green/Brown/Pink) based on ambient noise type',
+                'rain': '<strong>Rain:</strong> Natural rain recordings that adapt from light drizzle → steady rain → heavy downpour',
+                'ocean': '<strong>Ocean:</strong> Natural wave recordings that adapt from gentle lapping → rolling waves → crashing surf',
+                'stream': '<strong>Stream:</strong> Natural water recordings that adapt from trickling stream → rapid river → powerful waterfall'
+            };
+            themeInfoEl.innerHTML = themeDescriptions[config.soundTheme];
+        }
+
+        function getThemeLabel(theme) {
+            const labels = {
+                'adaptive-noise': 'Adaptive Noise',
+                'rain': 'Rain',
+                'ocean': 'Ocean',
+                'stream': 'Stream'
+            };
+            return labels[theme] || theme;
+        }
+
+        // Theme toggle
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+            const isDark = document.body.classList.contains('dark-theme');
+            themeToggle.textContent = isDark ? '☀️' : '🌙';
+            log(isDark ? 'Switched to dark theme' : 'Switched to light theme', false);
+            savePreferences();
+            if (typeof updateBodyBackground === 'function') {
+                updateBodyBackground();
+            }
+        });
+
+        // Background Customization
+        const dayBgThumbnail = document.getElementById('dayBgThumbnail');
+        const dayBgPreview = document.getElementById('dayBgPreview');
+        const dayBgPlaceholder = document.getElementById('dayBgPlaceholder');
+        const dayBgInput = document.getElementById('dayBgInput');
+        const clearDayBg = document.getElementById('clearDayBg');
+
+        const nightBgThumbnail = document.getElementById('nightBgThumbnail');
+        const nightBgPreview = document.getElementById('nightBgPreview');
+        const nightBgPlaceholder = document.getElementById('nightBgPlaceholder');
+        const nightBgInput = document.getElementById('nightBgInput');
+        const clearNightBg = document.getElementById('clearNightBg');
+
+        function updateBodyBackground() {
+            const isDark = document.body.classList.contains('dark-theme');
+            
+            if (isDark && config.nightModeBackground) {
+                document.body.style.setProperty('--night-bg', `url(${config.nightModeBackground})`);
+                document.body.classList.add('has-dark-bg');
+            } else {
+                document.body.classList.remove('has-dark-bg');
+            }
+
+            if (!isDark && config.dayModeBackground) {
+                document.body.style.setProperty('--day-bg', `url(${config.dayModeBackground})`);
+                document.body.classList.add('has-light-bg');
+            } else {
+                document.body.classList.remove('has-light-bg');
+            }
+        }
+
+        function loadBackgroundImage(file, isNightMode) {
+            if (!file || !file.type.startsWith('image/')) {
+                alert('Please select a valid image file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
+                
+                if (isNightMode) {
+                    config.nightModeBackground = dataUrl;
+                    nightBgPreview.src = dataUrl;
+                    nightBgPreview.classList.add('active');
+                    nightBgPlaceholder.style.display = 'none';
+                    clearNightBg.classList.add('active');
+                    document.body.style.setProperty('--night-bg', `url(${dataUrl})`);
+                    log('Night mode background updated', false);
+                } else {
+                    config.dayModeBackground = dataUrl;
+                    dayBgPreview.src = dataUrl;
+                    dayBgPreview.classList.add('active');
+                    dayBgPlaceholder.style.display = 'none';
+                    clearDayBg.classList.add('active');
+                    document.body.style.setProperty('--day-bg', `url(${dataUrl})`);
+                    log('Day mode background updated', false);
+                }
+
+                updateBodyBackground();
+                savePreferences();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Day mode background handlers
+        dayBgThumbnail.addEventListener('click', () => {
+            dayBgInput.click();
+        });
+
+        dayBgInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                loadBackgroundImage(e.target.files[0], false);
+            }
+        });
+
+        clearDayBg.addEventListener('click', (e) => {
+            e.stopPropagation();
+            config.dayModeBackground = null;
+            dayBgPreview.src = '';
+            dayBgPreview.classList.remove('active');
+            dayBgPlaceholder.style.display = 'flex';
+            clearDayBg.classList.remove('active');
+            document.body.classList.remove('has-light-bg');
+            dayBgInput.value = '';
+            log('Day mode background cleared', false);
+            savePreferences();
+        });
+
+        // Night mode background handlers
+        nightBgThumbnail.addEventListener('click', () => {
+            nightBgInput.click();
+        });
+
+        nightBgInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                loadBackgroundImage(e.target.files[0], true);
+            }
+        });
+
+        clearNightBg.addEventListener('click', (e) => {
+            e.stopPropagation();
+            config.nightModeBackground = null;
+            nightBgPreview.src = '';
+            nightBgPreview.classList.remove('active');
+            nightBgPlaceholder.style.display = 'flex';
+            clearNightBg.classList.remove('active');
+            document.body.classList.remove('has-dark-bg');
+            nightBgInput.value = '';
+            log('Night mode background cleared', false);
+            savePreferences();
+        });
+
+        // Initialize backgrounds on load
+        if (config.dayModeBackground) {
+            dayBgPreview.src = config.dayModeBackground;
+            dayBgPreview.classList.add('active');
+            dayBgPlaceholder.style.display = 'none';
+            clearDayBg.classList.add('active');
+            document.body.style.setProperty('--day-bg', `url(${config.dayModeBackground})`);
+        }
+
+        if (config.nightModeBackground) {
+            nightBgPreview.src = config.nightModeBackground;
+            nightBgPreview.classList.add('active');
+            nightBgPlaceholder.style.display = 'none';
+            clearNightBg.classList.add('active');
+            document.body.style.setProperty('--night-bg', `url(${config.nightModeBackground})`);
+        }
+
+        updateBodyBackground();
+
+        // Sleep timer functionality with favorites
+        let sleepTimerInterval = null;
+        let sleepTimerEndTime = null;
+        let activeTimerButton = null;
+        const timerFavoritesContainer = document.getElementById('timerFavorites');
+        const addTimerFavoriteBtn = document.getElementById('addTimerFavorite');
+        const timerStatus = document.getElementById('timerStatus');
+        const timerRemaining = document.getElementById('timerRemaining');
+
+        function formatTimerLabel(minutes) {
+            if (minutes === 0) return 'Off';
+            if (minutes < 60) return `${minutes}m`;
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+        }
+
+        function renderTimerFavorites() {
+            timerFavoritesContainer.innerHTML = '';
+            
+            // Add "Off" button
+            const offBtn = document.createElement('button');
+            offBtn.className = 'timer-favorite-btn';
+            offBtn.textContent = '⏹️ Off';
+            offBtn.style.cssText = 'padding: 12px; background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; font-size: 0.95em; cursor: pointer; transition: all 0.2s;';
+            if (config.sleepTimerMinutes === 0) {
+                offBtn.style.background = 'rgba(102, 126, 234, 0.4)';
+                offBtn.style.borderColor = 'rgba(102, 126, 234, 0.8)';
+                activeTimerButton = offBtn;
+            }
+            offBtn.onclick = () => selectTimer(0, offBtn);
+            timerFavoritesContainer.appendChild(offBtn);
+            
+            // Add favorite timers
+            config.timerFavorites.forEach((minutes, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'timer-favorite-btn';
+                btn.textContent = formatTimerLabel(minutes);
+                btn.style.cssText = 'padding: 12px; background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; font-size: 0.95em; cursor: pointer; transition: all 0.2s; position: relative;';
+                if (config.sleepTimerMinutes === minutes) {
+                    btn.style.background = 'rgba(102, 126, 234, 0.4)';
+                    btn.style.borderColor = 'rgba(102, 126, 234, 0.8)';
+                    activeTimerButton = btn;
+                }
+                
+                // Add delete button
+                const deleteBtn = document.createElement('span');
+                deleteBtn.textContent = '×';
+                deleteBtn.style.cssText = 'position: absolute; top: 2px; right: 6px; font-size: 1.3em; cursor: pointer; opacity: 0.6; line-height: 1;';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteTimerFavorite(index);
+                };
+                
+                btn.onclick = () => selectTimer(minutes, btn);
+                btn.appendChild(deleteBtn);
+                timerFavoritesContainer.appendChild(btn);
+            });
+        }
+
+        function selectTimer(minutes, buttonElement) {
+            config.sleepTimerMinutes = minutes;
+            savePreferences();
+            
+            // Update button styles
+            document.querySelectorAll('.timer-favorite-btn').forEach(btn => {
+                btn.style.background = 'rgba(255, 255, 255, 0.1)';
+                btn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            });
+            buttonElement.style.background = 'rgba(102, 126, 234, 0.4)';
+            buttonElement.style.borderColor = 'rgba(102, 126, 234, 0.8)';
+            activeTimerButton = buttonElement;
+            
+            if (isRunning && minutes > 0) {
+                startSleepTimer(minutes);
+            } else if (minutes === 0) {
+                clearSleepTimer();
+            }
+            
+            log(minutes === 0 ? 'Timer disabled' : `Timer set to ${formatTimerLabel(minutes)}`, false);
+        }
+
+        function deleteTimerFavorite(index) {
+            if (config.timerFavorites.length <= 1) {
+                alert('You must keep at least one timer favorite!');
+                return;
+            }
+            
+            if (confirm(`Delete ${formatTimerLabel(config.timerFavorites[index])} timer?`)) {
+                config.timerFavorites.splice(index, 1);
+                savePreferences();
+                renderTimerFavorites();
+                log('Timer favorite deleted', false);
+            }
+        }
+
+        const timerHoursInput = document.getElementById('timerHours');
+        const timerMinutesInput = document.getElementById('timerMinutes');
+        
+        addTimerFavoriteBtn.addEventListener('click', () => {
+            const hours = parseInt(timerHoursInput.value) || 0;
+            const mins = parseInt(timerMinutesInput.value) || 0;
+            const totalMinutes = (hours * 60) + mins;
+            
+            if (totalMinutes === 0) {
+                alert('Please enter a time greater than 0');
+                return;
+            }
+            
+            if (totalMinutes > 1440) {
+                alert('Maximum timer is 24 hours (1440 minutes)');
+                return;
+            }
+            
+            if (config.timerFavorites.includes(totalMinutes)) {
+                alert('This timer already exists in your favorites!');
+                return;
+            }
+            
+            config.timerFavorites.push(totalMinutes);
+            config.timerFavorites.sort((a, b) => b - a); // Sort descending
+            savePreferences();
+            renderTimerFavorites();
+            log(`Added ${formatTimerLabel(totalMinutes)} to favorites`, false);
+            
+            // Reset inputs
+            timerHoursInput.value = 0;
+            timerMinutesInput.value = 0;
+        });
+
+        function startSleepTimer(minutes) {
+            if (minutes === 0) {
+                clearSleepTimer();
+                return;
+            }
+
+            clearSleepTimer(); // Clear any existing timer
+            sleepTimerEndTime = Date.now() + (minutes * 60 * 1000);
+            timerStatus.style.display = 'block';
+            
+            sleepTimerInterval = setInterval(() => {
+                const remaining = sleepTimerEndTime - Date.now();
+                if (remaining <= 0) {
+                    clearSleepTimer();
+                    stopSystem(true); // Stop with fade out
+                    log('⏰ Sleep timer ended - automatically stopped', true);
+                    return;
+                }
+
+                const mins = Math.floor(remaining / 60000);
+                const secs = Math.floor((remaining % 60000) / 1000);
+                timerRemaining.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            }, 1000);
+
+            log(`⏰ Sleep timer started: ${formatTimerLabel(minutes)}`, false);
+        }
+
+        function clearSleepTimer() {
+            if (sleepTimerInterval) {
+                clearInterval(sleepTimerInterval);
+                sleepTimerInterval = null;
+            }
+            sleepTimerEndTime = null;
+            timerStatus.style.display = 'none';
+        }
+
+        // Transition speed controls
+        const fadeUpSpeedSlider = document.getElementById('fadeUpSpeed');
+        const fadeUpValueEl = document.getElementById('fadeUpValue');
+        const holdDurationSlider = document.getElementById('holdDuration');
+        const holdDurationValueEl = document.getElementById('holdDurationValue');
+        const fadeDownSpeedSlider = document.getElementById('fadeDownSpeed');
+        const fadeDownValueEl = document.getElementById('fadeDownValue');
+
+        fadeUpSpeedSlider.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            config.fadeUpSpeed = value;
+            fadeUpValueEl.textContent = `${value.toFixed(1)}s`;
+            savePreferences();
+        });
+
+        holdDurationSlider.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            config.holdDuration = value;
+            holdDurationValueEl.textContent = `${value.toFixed(1)}s`;
+            savePreferences();
+        });
+
+        fadeDownSpeedSlider.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            config.fadeDownSpeed = value;
+            fadeDownValueEl.textContent = `${value.toFixed(1)}s`;
+            savePreferences();
+        });
+
+        // Initialize transition controls with saved values
+        fadeUpSpeedSlider.value = config.fadeUpSpeed;
+        fadeUpValueEl.textContent = `${config.fadeUpSpeed.toFixed(1)}s`;
+        holdDurationSlider.value = config.holdDuration;
+        holdDurationValueEl.textContent = `${config.holdDuration.toFixed(1)}s`;
+        fadeDownSpeedSlider.value = config.fadeDownSpeed;
+        fadeDownValueEl.textContent = `${config.fadeDownSpeed.toFixed(1)}s`;
+
+        // Threshold controls
+        const threshold1Slider = document.getElementById('threshold1');
+        const threshold1ValueEl = document.getElementById('threshold1Value');
+        const threshold2Slider = document.getElementById('threshold2');
+        const threshold2ValueEl = document.getElementById('threshold2Value');
+
+        threshold1Slider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            config.threshold1 = value;
+            threshold1ValueEl.textContent = value;
+            updateThresholdDisplay();
+            savePreferences();
+        });
+
+        threshold2Slider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            // Ensure threshold2 is always higher than threshold1
+            if (value <= config.threshold1) {
+                config.threshold2 = config.threshold1 + 5;
+                threshold2Slider.value = config.threshold2;
+            } else {
+                config.threshold2 = value;
+            }
+            threshold2ValueEl.textContent = config.threshold2;
+            updateThresholdDisplay();
+            savePreferences();
+        });
+
+        // Initialize threshold controls with saved values
+        threshold1Slider.value = config.threshold1;
+        threshold1ValueEl.textContent = config.threshold1;
+        threshold2Slider.value = config.threshold2;
+        threshold2ValueEl.textContent = config.threshold2;
+
+        // Update the threshold display labels on the noise meter
+        function updateThresholdDisplay() {
+            const thresholdLabels = document.querySelectorAll('.noise-meter + div span');
+            if (thresholdLabels.length >= 3) {
+                thresholdLabels[1].textContent = config.threshold1; // Light → Medium threshold
+                thresholdLabels[3].textContent = config.threshold2; // Medium → Heavy threshold
+            }
+        }
+
+        // Initial threshold display update
+        updateThresholdDisplay();
+
+        // Render timer favorites on load
+        renderTimerFavorites();
+
+        // Enhanced stop function with fade out
+        function stopSystem(fadeOut = false) {
+            if (!isRunning) return;
+            
+            // Simply trigger the stop button to use existing stop logic
+            toggleBtn.click();
+        }
+
+        // Advanced Settings Toggle
+        const advancedSettingsToggle = document.getElementById('advancedSettingsToggle');
+        const advancedSettingsPanel = document.getElementById('advancedSettingsPanel');
+        const advancedSettingsArrow = document.getElementById('advancedSettingsArrow');
+        let advancedSettingsOpen = false;
+
+        advancedSettingsToggle.addEventListener('click', () => {
+            advancedSettingsOpen = !advancedSettingsOpen;
+            
+            if (advancedSettingsOpen) {
+                // Open the panel
+                advancedSettingsPanel.style.maxHeight = advancedSettingsPanel.scrollHeight + 'px';
+                advancedSettingsArrow.style.transform = 'rotate(180deg)';
+                advancedSettingsToggle.style.background = 'rgba(102, 126, 234, 0.3)';
+            } else {
+                // Close the panel
+                advancedSettingsPanel.style.maxHeight = '0';
+                advancedSettingsArrow.style.transform = 'rotate(0deg)';
+                advancedSettingsToggle.style.background = 'rgba(255, 255, 255, 0.15)';
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Space bar to start/stop (but not when typing in inputs)
+            if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'SELECT' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                toggleBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>

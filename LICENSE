@@ -1,0 +1,35 @@
+Adaptive White Noise - Copyright (C) 2025 Sarah Bass [Pseudonym: Evilegi]
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+═══════════════════════════════════════════════════════════════════════
+
+IMPORTANT: AGPL Requirements
+
+If you run a modified version of this program on a server and let users
+interact with it remotely through a computer network, you MUST provide
+those users with access to the source code of your modified version.
+
+This means:
+✓ You CAN use this for free
+✓ You CAN modify it
+✓ You CAN host it for others
+✗ You CANNOT sell it without providing source code
+✗ You CANNOT hide your modifications if you host it
+
+This ensures the software remains free for everyone.
+
+═══════════════════════════════════════════════════════════════════════
+
+For the full license text, visit: https://www.gnu.org/licenses/agpl-3.0.txt
