@@ -28,7 +28,7 @@ A smart, browser-based sound masking application that automatically adapts to yo
 
 ### ⏰ Flexible Sleep Timer
 - Multiple timer favorites (easily add custom durations)
-- Default options: 8hr, 7hr, 6hr, 5hr, 4hr, 3hr, 2hr, 1hr, 30min, Off
+- Default options: 8hr, 20min, Off
 - Countdown display shows remaining time
 - Automatic stop when timer expires
 
@@ -46,7 +46,7 @@ A smart, browser-based sound masking application that automatically adapts to yo
 
 ## 🚀 Quick Start
 
-1. **Visit**: Simply open `adaptive-white-noise-themed6.html` in a modern web browser
+1. **Visit**: Simply go to https://evilegi.github.io/adaptive-white-noise/ or open `adaptive-white-noise-v1.html` in a modern web browser
 2. **Grant Microphone Access**: Click "Start" and allow microphone access for adaptive features
 3. **Adjust Settings**: Customize volume, theme, and timer to your preferences
 4. **Save Preset**: Save your favorite configuration for quick access later
