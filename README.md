@@ -2,6 +2,16 @@
 
 A smart, browser-based sound masking application that automatically adapts to your environment. Perfect for sleep, focus, and privacy.
 
+## 🚀 Help Fuel Future Projects
+
+Adaptive White Noise is just the beginning. Your donation helps fund:
+- New open-source apps
+- Better documentation
+- Faster bug fixes
+
+Even $1 makes a difference.  
+Support the mission via [PayPal.me](https://paypal.me/evilegi) or [Venmo](https://venmo.com/u/evilegi).
+
 <h3>🌙 Main Interface in Custom Dark Mode</h3>
 <a href="screenshots/main-interface-(custom-dark-mode).png" target="_blank">
   <img src="screenshots/main-interface-(custom-dark-mode).png" width="600" alt="Main Interface - Dark Mode"/>
